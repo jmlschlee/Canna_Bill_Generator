@@ -3,35 +3,56 @@ import streamlit as st
 st.set_page_config(page_title="Cannabis Bill Generator", layout="centered")
 
 st.title("⚖️ Cannabis Bill Generator")
-st.markdown("""Type in a cannabis-related policy issue, and this app will generate a legislative draft to propose a new bill or amend existing law in Connecticut.
+st.markdown("""
+Type in a cannabis-related policy issue and generate a legislative draft using Connecticut-style legal language. You can simulate GPT-backed drafting, cite CT statutes, and export or comment on your proposal.
 """)
 
-# Input form
-issue = st.text_area("📝 Describe the cannabis-related issue", placeholder="E.g. Medical patients are being denied home grow rights...")
+# Inputs
+issue = st.text_area("📝 Describe the cannabis-related issue", placeholder="E.g. Patients are being denied home grow rights.")
+action_type = st.selectbox("Bill type", ["New bill", "Amendment to existing law"])
+jurisdiction = st.selectbox("📚 Legal Format", ["Connecticut General Assembly", "Federal Congress", "Municipal Ordinance"])
+include_notes = st.checkbox("📎 Add rationale and references", value=True)
 
-action_type = st.selectbox("What kind of bill do you want?", ["New bill", "Amendment to existing law"])
+gpt_simulated = st.checkbox("🤖 Use GPT-style drafting (simulated)", value=True)
+submit = st.button("📜 Generate Bill")
 
-submit = st.button("📜 Draft Legislation")
+# Mock GPT function
+def gpt_draft(issue, action, jurisdiction):
+    key_line = f"This draft addresses the cannabis-related concern: '{issue}'"
+    if "home grow" in issue.lower():
+        line = "This act affirms the right of registered medical cannabis patients to cultivate up to six plants at home."
+    else:
+        line = "The act shall ensure rights, access, or enforcement mechanisms tied to this concern."
+    return f"{key_line}\n\n{line}\n\nAdditional sections may be appended after stakeholder review."
 
-# GPT-style bill generator logic (simulated for now)
-def generate_bill(issue, action):
-    title = f"An Act Concerning {issue[:80].strip().capitalize()}"
-    preamble = f"Be it enacted by the Senate and House of Representatives in General Assembly convened:\n\n"
-    section_1 = f"Section 1. (NEW) Effective October 1, 2025, the following provisions shall apply regarding {issue.lower()}."
-    section_2 = f"Section 2. The Department of Consumer Protection shall develop regulations to enforce and support this act."
-    rationale = f"// This draft is based on an issue involving: {issue}. Tailored for Connecticut General Assembly 2025 session."
+# Build draft
+def draft_bill(issue, action_type, jurisdiction, with_notes=True, gpt=False):
+    title = f"An Act Concerning {issue[:60].strip().capitalize()}"
+    if action_type == "Amendment to existing law":
+        section = f"Section 1. Subsection (a) of section 21a-408 of the general statutes is amended to include:\n\"{issue}.\""
+    else:
+        if jurisdiction == "Federal Congress":
+            section = f"Section 1. SHORT TITLE. This Act may be cited as the \"{issue.title()} Act of 2025\".\nSection 2. Congress finds that {issue.lower()} impacts public policy."
+        else:
+            section = f"Section 1. (NEW) Effective October 1, 2025:\n(a) The following provisions apply regarding {issue.lower()}.\n(b) DCP shall enforce compliance."
 
-    if action == "Amendment to existing law":
-        section_1 = f"Section 1. Subsection (a) of section 21a-408 of the general statutes is amended to include:\n\"{issue}.\""
+    if gpt:
+        gpt_inserts = gpt_draft(issue, action_type, jurisdiction)
+        section += f"\n\n// GPT Draft Insert:\n{gpt_inserts}"
 
-    return title, preamble + section_1 + "\n\n" + section_2, rationale
+    foot = f"// Notes: Generated for {jurisdiction} format using cannabis advocacy AI draft tool." if with_notes else ""
+    return title, section, foot
 
-# Output draft
+# Output
 if submit and issue.strip():
-    title, body, note = generate_bill(issue, action_type)
-    st.subheader("📘 Drafted Bill")
+    title, text, foot = draft_bill(issue, action_type, jurisdiction, include_notes, gpt_simulated)
+    st.subheader("📘 Draft Output")
     st.markdown(f"### {title}")
-    st.code(body, language="markdown")
-    st.caption(note)
+    st.code(text, language="markdown")
+    if foot:
+        st.caption(foot)
+
+    st.text_input("💬 Public comment (optional):", placeholder="Enter your feedback or suggested changes here...")
+    st.button("📤 Submit to Advocate Portal (simulated)")
 else:
-    st.info("Enter a cannabis policy issue and click 'Draft Legislation'.")
+    st.info("Enter a cannabis issue to generate a draft.")
